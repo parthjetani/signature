@@ -128,23 +128,36 @@
         let undoneActions = [];
 
         // Drawing state
-        canvas.addEventListener("mousedown", (e) => {
+        const startDrawing = (e) => {
+            e.preventDefault();
             isDrawing = true;
+            const offsetX = e.offsetX || (e.touches ? e.touches[0].clientX - canvas.offsetLeft : 0);
+            const offsetY = e.offsetY || (e.touches ? e.touches[0].clientY - canvas.offsetTop : 0);
             ctx.beginPath();
-            ctx.moveTo(e.offsetX, e.offsetY);
-        });
+            ctx.moveTo(offsetX, offsetY);
+        };
 
-        canvas.addEventListener("mousemove", (e) => {
+        const draw = (e) => {
             if (isDrawing) {
-                ctx.lineTo(e.offsetX, e.offsetY);
+                e.preventDefault();
+                const offsetX = e.offsetX || (e.touches ? e.touches[0].clientX - canvas.offsetLeft : 0);
+                const offsetY = e.offsetY || (e.touches ? e.touches[0].clientY - canvas.offsetTop : 0);
+                ctx.lineTo(offsetX, offsetY);
                 ctx.stroke();
             }
-        });
+        };
 
-        canvas.addEventListener("mouseup", () => {
+        const stopDrawing = () => {
             isDrawing = false;
             saveAction();
-        });
+        };
+
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("mouseup", stopDrawing);
+        canvas.addEventListener("touchstart", startDrawing);
+        canvas.addEventListener("touchmove", draw);
+        canvas.addEventListener("touchend", stopDrawing);
 
         function saveAction() {
             actions.push(canvas.toDataURL());
