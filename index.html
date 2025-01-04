@@ -191,6 +191,9 @@
         clearButton.addEventListener("click", () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             saveAction();
+
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = "";
         });
 
         addTypedSignatureButton.addEventListener("click", () => {
