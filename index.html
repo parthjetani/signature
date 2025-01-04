@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Signature</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: "Roboto", sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .signature-container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            display: block;
+            margin: 10px auto;
+            background: #fff;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .buttons button, #addTypedSignature {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #undoButton, #redoButton {
+            background-color: #007bff;
+            color: white;
+        }
+        #clearButton {
+            background-color: #ff4c4c;
+            color: white;
+        }
+        #saveButton {
+            background-color: #4caf50;
+            color: white;
+        }
+        .typed-signature {
+            margin-top: 20px;
+        }
+        #typedName {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+        }
+        .signature-options {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .signature-options img {
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            transition: border 0.3s;
+        }
+        .signature-options img:hover {
+            border: 2px solid #007bff;
+        }
+        #output {
+            margin-top: 20px;
+        }
+        #savedSignature {
+            max-width: 100%;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="signature-container">
+        <h1>Digital Signature</h1>
+        <canvas id="signatureCanvas"></canvas>
+        <div class="buttons">
+            <button id="undoButton">Undo</button>
+            <button id="redoButton">Redo</button>
+            <button id="clearButton">Clear</button>
+            <button id="saveButton">Save</button>
+        </div>
+        <div class="typed-signature">
+            <label for="typedName">Typed Signature:</label>
+            <input type="text" id="typedName" placeholder="Type your name" />
+            <button id="addTypedSignature">Add to Canvas</button>
+        </div>
+        <div class="signature-options" id="signatureOptions"></div>
+        <div id="output">
+            <h3>Saved Signature:</h3>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById("signatureCanvas");
+        const ctx = canvas.getContext("2d");
+        const clearButton = document.getElementById("clearButton");
+        const saveButton = document.getElementById("saveButton");
+        const undoButton = document.getElementById("undoButton");
+        const redoButton = document.getElementById("redoButton");
+        const addTypedSignatureButton = document.getElementById("addTypedSignature");
+        const typedNameInput = document.getElementById("typedName");
+        const signatureOptions = document.getElementById("signatureOptions");
+
+        canvas.width = 500;
+        canvas.height = 300;
+
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000";
+
+        let isDrawing = false;
+        let actions = [];
+        let undoneActions = [];
+
+        // Drawing state
+        canvas.addEventListener("mousedown", (e) => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (isDrawing) {
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener("mouseup", () => {
+            isDrawing = false;
+            saveAction();
+        });
+
+        function saveAction() {
+            actions.push(canvas.toDataURL());
+            undoneActions = [];
+        }
+
+        function restoreCanvas(dataURL) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (dataURL) {
+                const img = new Image();
+                img.src = dataURL;
+                img.onload = () => ctx.drawImage(img, 0, 0);
+            }
+        }
+
+        undoButton.addEventListener("click", () => {
+            if (actions.length > 0) {
+                undoneActions.push(actions.pop());
+                restoreCanvas(actions.length > 0 ? actions[actions.length - 1] : null);
+            }
+        });
+
+        redoButton.addEventListener("click", () => {
+            if (undoneActions.length > 0) {
+                const lastUndoneAction = undoneActions.pop();
+                actions.push(lastUndoneAction);
+                restoreCanvas(lastUndoneAction);
+            }
+        });
+
+        clearButton.addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveAction();
+        });
+
+        addTypedSignatureButton.addEventListener("click", () => {
+            const typedName = typedNameInput.value;
+            if (typedName) {
+                const fonts = [
+                    "Arial",
+                    "Courier New",
+                    "Georgia",
+                    "Times New Roman",
+                    "Verdana",
+                    "'Pacifico', cursive",
+                    "'Roboto', sans-serif"
+                ];
+
+                signatureOptions.innerHTML = ""; // Clear previous options
+
+                fonts.forEach((font) => {
+                    const tempCanvas = document.createElement("canvas");
+                    tempCanvas.width = 300;
+                    tempCanvas.height = 100;
+                    const tempCtx = tempCanvas.getContext("2d");
+                    tempCtx.font = `24px ${font}`;
+                    tempCtx.fillStyle = "#000";
+                    tempCtx.fillText(typedName, 10, 50);
+
+                    const img = document.createElement("img");
+                    img.src = tempCanvas.toDataURL();
+                    img.alt = "Signature Option";
+                    img.addEventListener("click", () => addSignatureToCanvas(img.src));
+                    signatureOptions.appendChild(img);
+                });
+            }
+        });
+
+        function addSignatureToCanvas(dataURL) {
+            const img = new Image();
+            img.src = dataURL;
+            img.onload = () => {
+                ctx.drawImage(img, 20, canvas.height - 60, 200, 50);
+                saveAction();
+            };
+        }
+
+        saveButton.addEventListener("click", () => {
+            const dataURL = canvas.toDataURL("image/png");
+            const img = document.createElement("img");
+            img.src = dataURL;
+            img.alt = "Saved Signature";
+            img.style.maxWidth = "100%";
+            img.style.border = "1px solid #ccc";
+            img.style.marginTop = "10px";
+
+            const outputDiv = document.getElementById("output");
+            outputDiv.appendChild(img);
+        });
+    </script>
+</body>
+</html>
